@@ -7,24 +7,27 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		2F51CD9826C1D66600863922 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F51CD9726C1D66600863922 /* AppDelegate.swift */; };
-		2F51CD9A26C1D66600863922 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F51CD9926C1D66600863922 /* ViewController.swift */; };
-		2F51CD9C26C1D66800863922 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2F51CD9B26C1D66800863922 /* Assets.xcassets */; };
-		2F51CD9F26C1D66800863922 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 2F51CD9D26C1D66800863922 /* Main.storyboard */; };
+		2F48D1F926C20195000A6384 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F48D1F826C20195000A6384 /* AppDelegate.swift */; };
+		2F48D1FB26C20195000A6384 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F48D1FA26C20195000A6384 /* SceneDelegate.swift */; };
+		2F48D1FD26C20195000A6384 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F48D1FC26C20195000A6384 /* ViewController.swift */; };
+		2F48D20026C20195000A6384 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 2F48D1FE26C20195000A6384 /* Main.storyboard */; };
+		2F48D20226C20196000A6384 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2F48D20126C20196000A6384 /* Assets.xcassets */; };
+		2F48D20526C20196000A6384 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 2F48D20326C20196000A6384 /* LaunchScreen.storyboard */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		2F51CD9426C1D66600863922 /* OurChat.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OurChat.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		2F51CD9726C1D66600863922 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		2F51CD9926C1D66600863922 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
-		2F51CD9B26C1D66800863922 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		2F51CD9E26C1D66800863922 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
-		2F51CDA026C1D66800863922 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		2F51CDA126C1D66800863922 /* OurChat.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OurChat.entitlements; sourceTree = "<group>"; };
+		2F48D1F526C20195000A6384 /* OurChat.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OurChat.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2F48D1F826C20195000A6384 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		2F48D1FA26C20195000A6384 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		2F48D1FC26C20195000A6384 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		2F48D1FF26C20195000A6384 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		2F48D20126C20196000A6384 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		2F48D20426C20196000A6384 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		2F48D20626C20196000A6384 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		2F51CD9126C1D66600863922 /* Frameworks */ = {
+		2F48D1F226C20195000A6384 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -34,31 +37,32 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		2F51CD8B26C1D66600863922 = {
+		2F48D1EC26C20195000A6384 = {
 			isa = PBXGroup;
 			children = (
-				2F51CD9626C1D66600863922 /* OurChat */,
-				2F51CD9526C1D66600863922 /* Products */,
+				2F48D1F726C20195000A6384 /* OurChat */,
+				2F48D1F626C20195000A6384 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		2F51CD9526C1D66600863922 /* Products */ = {
+		2F48D1F626C20195000A6384 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				2F51CD9426C1D66600863922 /* OurChat.app */,
+				2F48D1F526C20195000A6384 /* OurChat.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		2F51CD9626C1D66600863922 /* OurChat */ = {
+		2F48D1F726C20195000A6384 /* OurChat */ = {
 			isa = PBXGroup;
 			children = (
-				2F51CD9726C1D66600863922 /* AppDelegate.swift */,
-				2F51CD9926C1D66600863922 /* ViewController.swift */,
-				2F51CD9B26C1D66800863922 /* Assets.xcassets */,
-				2F51CD9D26C1D66800863922 /* Main.storyboard */,
-				2F51CDA026C1D66800863922 /* Info.plist */,
-				2F51CDA126C1D66800863922 /* OurChat.entitlements */,
+				2F48D1F826C20195000A6384 /* AppDelegate.swift */,
+				2F48D1FA26C20195000A6384 /* SceneDelegate.swift */,
+				2F48D1FC26C20195000A6384 /* ViewController.swift */,
+				2F48D1FE26C20195000A6384 /* Main.storyboard */,
+				2F48D20126C20196000A6384 /* Assets.xcassets */,
+				2F48D20326C20196000A6384 /* LaunchScreen.storyboard */,
+				2F48D20626C20196000A6384 /* Info.plist */,
 			);
 			path = OurChat;
 			sourceTree = "<group>";
@@ -66,13 +70,13 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		2F51CD9326C1D66600863922 /* OurChat */ = {
+		2F48D1F426C20195000A6384 /* OurChat */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 2F51CDA426C1D66800863922 /* Build configuration list for PBXNativeTarget "OurChat" */;
+			buildConfigurationList = 2F48D20926C20196000A6384 /* Build configuration list for PBXNativeTarget "OurChat" */;
 			buildPhases = (
-				2F51CD9026C1D66600863922 /* Sources */,
-				2F51CD9126C1D66600863922 /* Frameworks */,
-				2F51CD9226C1D66600863922 /* Resources */,
+				2F48D1F126C20195000A6384 /* Sources */,
+				2F48D1F226C20195000A6384 /* Frameworks */,
+				2F48D1F326C20195000A6384 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -80,24 +84,24 @@
 			);
 			name = OurChat;
 			productName = OurChat;
-			productReference = 2F51CD9426C1D66600863922 /* OurChat.app */;
+			productReference = 2F48D1F526C20195000A6384 /* OurChat.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		2F51CD8C26C1D66600863922 /* Project object */ = {
+		2F48D1ED26C20195000A6384 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 1250;
 				LastUpgradeCheck = 1250;
 				TargetAttributes = {
-					2F51CD9326C1D66600863922 = {
+					2F48D1F426C20195000A6384 = {
 						CreatedOnToolsVersion = 12.5.1;
 					};
 				};
 			};
-			buildConfigurationList = 2F51CD8F26C1D66600863922 /* Build configuration list for PBXProject "OurChat" */;
+			buildConfigurationList = 2F48D1F026C20195000A6384 /* Build configuration list for PBXProject "OurChat" */;
 			compatibilityVersion = "Xcode 9.3";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -105,53 +109,63 @@
 				en,
 				Base,
 			);
-			mainGroup = 2F51CD8B26C1D66600863922;
-			productRefGroup = 2F51CD9526C1D66600863922 /* Products */;
+			mainGroup = 2F48D1EC26C20195000A6384;
+			productRefGroup = 2F48D1F626C20195000A6384 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				2F51CD9326C1D66600863922 /* OurChat */,
+				2F48D1F426C20195000A6384 /* OurChat */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		2F51CD9226C1D66600863922 /* Resources */ = {
+		2F48D1F326C20195000A6384 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2F51CD9C26C1D66800863922 /* Assets.xcassets in Resources */,
-				2F51CD9F26C1D66800863922 /* Main.storyboard in Resources */,
+				2F48D20526C20196000A6384 /* LaunchScreen.storyboard in Resources */,
+				2F48D20226C20196000A6384 /* Assets.xcassets in Resources */,
+				2F48D20026C20195000A6384 /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		2F51CD9026C1D66600863922 /* Sources */ = {
+		2F48D1F126C20195000A6384 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2F51CD9A26C1D66600863922 /* ViewController.swift in Sources */,
-				2F51CD9826C1D66600863922 /* AppDelegate.swift in Sources */,
+				2F48D1FD26C20195000A6384 /* ViewController.swift in Sources */,
+				2F48D1F926C20195000A6384 /* AppDelegate.swift in Sources */,
+				2F48D1FB26C20195000A6384 /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
-		2F51CD9D26C1D66800863922 /* Main.storyboard */ = {
+		2F48D1FE26C20195000A6384 /* Main.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
-				2F51CD9E26C1D66800863922 /* Base */,
+				2F48D1FF26C20195000A6384 /* Base */,
 			);
 			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+		2F48D20326C20196000A6384 /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				2F48D20426C20196000A6384 /* Base */,
+			);
+			name = LaunchScreen.storyboard;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
-		2F51CDA226C1D66800863922 /* Debug */ = {
+		2F48D20726C20196000A6384 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -202,17 +216,17 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 11.3;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.5;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				SDKROOT = macosx;
+				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
 		};
-		2F51CDA326C1D66800863922 /* Release */ = {
+		2F48D20826C20196000A6384 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -257,79 +271,76 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 11.3;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.5;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
-				SDKROOT = macosx;
+				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
-		2F51CDA526C1D66800863922 /* Debug */ = {
+		2F48D20A26C20196000A6384 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = OurChat/OurChat.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = BMN522LVQT;
-				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = OurChat/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
-					"@executable_path/../Frameworks",
+					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.VinnyMadeApps.OurChat;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
-		2F51CDA626C1D66800863922 /* Release */ = {
+		2F48D20B26C20196000A6384 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = OurChat/OurChat.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = BMN522LVQT;
-				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = OurChat/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
-					"@executable_path/../Frameworks",
+					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.VinnyMadeApps.OurChat;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		2F51CD8F26C1D66600863922 /* Build configuration list for PBXProject "OurChat" */ = {
+		2F48D1F026C20195000A6384 /* Build configuration list for PBXProject "OurChat" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				2F51CDA226C1D66800863922 /* Debug */,
-				2F51CDA326C1D66800863922 /* Release */,
+				2F48D20726C20196000A6384 /* Debug */,
+				2F48D20826C20196000A6384 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		2F51CDA426C1D66800863922 /* Build configuration list for PBXNativeTarget "OurChat" */ = {
+		2F48D20926C20196000A6384 /* Build configuration list for PBXNativeTarget "OurChat" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				2F51CDA526C1D66800863922 /* Debug */,
-				2F51CDA626C1D66800863922 /* Release */,
+				2F48D20A26C20196000A6384 /* Debug */,
+				2F48D20B26C20196000A6384 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = 2F51CD8C26C1D66600863922 /* Project object */;
+	rootObject = 2F48D1ED26C20195000A6384 /* Project object */;
 }
