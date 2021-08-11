@@ -7,11 +7,12 @@
 
 import UIKit
 import PhotosUI
+import FirebaseAuth
 
 class RegisterViewController: UIViewController {
 
     // properties
-
+    let firebaseAuthObject = FirebaseAuth.Auth.auth()
     
     
     // UI properties
@@ -108,7 +109,7 @@ class RegisterViewController: UIViewController {
     // System called functions
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Log In"
+        title = "Register"
         view.backgroundColor = .white
         addAllSubViews()
     }
@@ -208,6 +209,18 @@ class RegisterViewController: UIViewController {
             return
         }
         // implement fireabse register
+        registerUserWithEmailAndPassword(firstName: firstName, lastName: lastName, email: email, password: password) {[weak self] result in
+            switch result {
+            
+            case .success(let successString):
+                print(successString)
+                // here is where we want to take them to the conversations VC
+            
+            case .failure(let error):
+                print(error)
+                self?.presentErrorMessageWithFirebaseRegister()
+            }
+        }
     }
 
     @objc private func didTapChangeProfilePicture()
@@ -234,6 +247,34 @@ class RegisterViewController: UIViewController {
         profilePictureImageView.addGestureRecognizer(gesture)
         profilePictureImageView.isUserInteractionEnabled = true
     }
+    
+    // MARK: - Firebase Authentication functions
+    private func registerUserWithEmailAndPassword(firstName : String, lastName : String, email : String, password : String, completion : @escaping (Result<String,Error>) -> Void)
+    {
+        let ChatAppUser = ChatAppUser(firstNameVal: firstName, lastNameVal: lastName, emailVal: email)
+        
+        firebaseAuthObject.createUser(withEmail: ChatAppUser.email, password: password) { authDataResult, error in
+            guard let dataResult = authDataResult, error == nil else {
+                completion(.failure(error!))
+                return
+            }
+            // success
+            print(dataResult.user)
+            let successString = "Successfully registered the user with Firebase"
+            UserDefaults.standard.setValue(true, forKey: UserDefaultKeys.isUserLoggedInKey)
+            completion(.success(successString))
+        }
+    }
+    
+    private func presentErrorMessageWithFirebaseRegister()
+    {
+        let alertController = UIAlertController(title: "Woops", message: "There was an issue in registering you with our servers. Please try again." , preferredStyle: .alert)
+        let alertAction = UIAlertAction(title: "Ok", style: .default, handler: nil)
+        alertController.addAction(alertAction)
+        present(alertController, animated: true, completion: nil)
+    }
+    
+    
 }
 
 // MARK: - Extensions

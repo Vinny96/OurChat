@@ -6,11 +6,12 @@
 //
 
 import UIKit
+import FirebaseAuth
 
 class LoginViewController: UIViewController {
 
     // properties
-    
+    let firebaseObject = FirebaseAuth.Auth.auth()
     
     
     // UI properties
@@ -120,7 +121,7 @@ class LoginViewController: UIViewController {
     
     private func initializeLoginButton()
     {
-        loginButton.addTarget(self, action: #selector(didTapRegister), for: .touchUpInside)
+        loginButton.addTarget(self, action: #selector(loginButtonTapped), for: .touchUpInside)
         loginButton.frame = CGRect(x: 30, y: passwordField.bottom + 10, width: scrollView.width - 60, height: 52)
     }
     
@@ -151,6 +152,23 @@ class LoginViewController: UIViewController {
             return
         }
         // implement fireabse login
+        logInUserWithFirebase(email: email, password: password) {[weak self] result in
+            switch result {
+                
+            case .success(let successString):
+                print(successString)
+                DispatchQueue.main.async {
+                    self?.dismiss(animated: true, completion: nil)
+                }
+            
+            case .failure(let error):
+                print(error)
+                DispatchQueue.main.async {
+                    self?.alertUserOfSignInError()
+                }
+            }
+        }
+        
     }
 
     // MARK: - Functions
@@ -162,6 +180,34 @@ class LoginViewController: UIViewController {
         present(alertController, animated: true)
         
     }
+    
+    
+    // MARK: - Firebase Functions
+    private func logInUserWithFirebase(email : String, password : String, completion : @escaping (Result<String,Error>) -> Void)
+    {
+        firebaseObject.signIn(withEmail: email, password: password) { authDataResult, error in
+            guard let result = authDataResult, error == nil else {
+                completion(.failure(error!))
+                return
+            }
+            // here we have a success
+            print(result.user)
+            let signInSuccess = "Sign in successful"
+            // pass in the value to user defaults here
+            UserDefaults.standard.setValue(true, forKey: UserDefaultKeys.isUserLoggedInKey)
+            completion(.success(signInSuccess))
+        }
+    }
+    
+    private func alertUserOfSignInError()
+    {
+        let alertController = UIAlertController(title: "Whoops", message: "There was an error signing you in please make sure that ", preferredStyle: .alert)
+        let alertAction = UIAlertAction(title: "Ok", style: .default, handler: nil)
+        alertController.addAction(alertAction)
+        present(alertController, animated: true)
+    }
+    
+    
 }
 
 extension LoginViewController : UITextFieldDelegate
