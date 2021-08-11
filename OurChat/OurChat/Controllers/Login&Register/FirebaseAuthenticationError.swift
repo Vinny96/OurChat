@@ -6,3 +6,8 @@
 //
 
 import Foundation
+
+enum FirebaseAuthenticationError : Error
+{
+    case failedToSignIn
+}
