@@ -18,7 +18,7 @@ class RegisterViewController: UIViewController {
     // UI properties
     private let profilePictureImageView : UIImageView = {
         let imageView = UIImageView()
-        imageView.image = UIImage(systemName: "person")
+        imageView.image = UIImage(systemName: "person.circle")
         imageView.tintColor = .gray
         imageView.contentMode = .scaleAspectFill
         imageView.layer.masksToBounds = true
@@ -202,23 +202,51 @@ class RegisterViewController: UIViewController {
               let email = emailField.text,
               let password = passwordField.text,
               !firstName.isEmpty, !lastName.isEmpty ,!email.isEmpty,
-              !password.isEmpty, password.count >= 6 else {
+              !password.isEmpty, password.count >= 6
+        else {
             DispatchQueue.main.async {
                 self.alertUserRegardingEmptyFields()
             }
             return
         }
-        // implement fireabse register
-        registerUserWithEmailAndPassword(firstName: firstName, lastName: lastName, email: email, password: password) {[weak self] result in
-            switch result {
-            
-            case .success(let successString):
-                print(successString)
-                // here is where we want to take them to the conversations VC
-            
-            case .failure(let error):
-                print(error)
-                self?.presentErrorMessageWithFirebaseRegister()
+        // so here we want to check if the user exists prior to registering the user with Firebase
+        let chatAppUser = ChatAppUser(firstNameVal: firstName, lastNameVal: lastName, emailVal: email)
+        
+        DatabaseManager.shared.checkIfUserExistsInDB(chatAppUserToCheck: chatAppUser) {[weak self] doesExist in
+            if doesExist == true
+            {
+                // here we want to present a message telling the user that another user with that email already exists
+                DispatchQueue.main.async {
+                    self?.userAlreadyExistsInFirebaseMessage()
+                }
+                return
+            }
+            else
+            {
+                // so here the user does not exist so we can registerUserTheUser
+                self?.registerUserWithEmailAndPassword(firstName: firstName, lastName: lastName, email: email, password: password) {registerUserResult in
+                    switch registerUserResult {
+                    
+                    case .success(let successString):
+                        print(successString)
+                        // now we can write our user to the database
+                        DatabaseManager.shared.writeNewUserToDB(chatAppUserToInsert: chatAppUser) { databaseInsertResult in
+                            switch databaseInsertResult {
+                            
+                            case .success(_):
+                                print("Successfully wrote the user to the database")
+                            case .failure(_):
+                                print("There was an error in writing the user to the database.")
+                            }
+                        }
+                        self?.navigationController?.dismiss(animated: true, completion: nil)
+                        
+                    case .failure(let error):
+                        print(error)
+                        self?.presentErrorMessageWithFirebaseRegister()
+                        return
+                    }
+                }
             }
         }
     }
@@ -248,7 +276,7 @@ class RegisterViewController: UIViewController {
         profilePictureImageView.isUserInteractionEnabled = true
     }
     
-    // MARK: - Firebase Authentication functions
+    // MARK: - Firebase Authentication functions and other related Firebase functions
     private func registerUserWithEmailAndPassword(firstName : String, lastName : String, email : String, password : String, completion : @escaping (Result<String,Error>) -> Void)
     {
         let ChatAppUser = ChatAppUser(firstNameVal: firstName, lastNameVal: lastName, emailVal: email)
@@ -261,7 +289,6 @@ class RegisterViewController: UIViewController {
             // success
             print(dataResult.user)
             let successString = "Successfully registered the user with Firebase"
-            UserDefaults.standard.setValue(true, forKey: UserDefaultKeys.isUserLoggedInKey)
             completion(.success(successString))
         }
     }
@@ -274,6 +301,15 @@ class RegisterViewController: UIViewController {
         present(alertController, animated: true, completion: nil)
     }
     
+    /// This is going to be used to inform the user that another user with that email address already exists
+    private func userAlreadyExistsInFirebaseMessage()
+    {
+        let alertController = UIAlertController(title: "Woops", message: "Another user with that email already exists. Please use a differnt email.", preferredStyle: .alert)
+        let alertAction = UIAlertAction(title: "Ok", style: .default, handler: nil)
+        alertController.addAction(alertAction)
+        present(alertController, animated: true, completion: nil)
+        
+    }
     
 }
 
