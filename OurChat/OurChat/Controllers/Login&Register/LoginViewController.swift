@@ -6,12 +6,13 @@
 //
 
 import UIKit
+import FBSDKLoginKit
 import FirebaseAuth
 
 class LoginViewController: UIViewController {
 
     // properties
-    let firebaseObject = FirebaseAuth.Auth.auth()
+    let firebaseAuthObject = FirebaseAuth.Auth.auth()
     
     
     // UI properties
@@ -69,6 +70,14 @@ class LoginViewController: UIViewController {
         return button
     }()
     
+    private let facebookLoginButton : FBLoginButton = {
+        let loginButton = FBLoginButton()
+        loginButton.permissions = ["email" , "public_profile"]
+        loginButton.layer.cornerRadius = 12
+        loginButton.layer.masksToBounds = true
+        return loginButton
+    }()
+    
     
     // System called functions
     override func viewDidLoad() {
@@ -78,6 +87,7 @@ class LoginViewController: UIViewController {
         
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Register", style: .plain, target: self, action: #selector(didTapRegister))
         addAllSubViews()
+        initializeDelegates()
     }
     
     override func viewDidLayoutSubviews() {
@@ -87,15 +97,17 @@ class LoginViewController: UIViewController {
         initializeEmailField()
         initializePasswordField()
         initializeLoginButton()
+        initializeFBLoginButton()
     }
     
     
     // MARK: - Initializing UI and ViewController
     
-    private func initializeDelegate()
+    private func initializeDelegates()
     {
         emailField.delegate = self
         passwordField.delegate = self
+        facebookLoginButton.delegate = self
     }
     
     private func initializeScrollView()
@@ -125,6 +137,12 @@ class LoginViewController: UIViewController {
         loginButton.frame = CGRect(x: 30, y: passwordField.bottom + 10, width: scrollView.width - 60, height: 52)
     }
     
+    private func initializeFBLoginButton()
+    {
+        facebookLoginButton.center = scrollView.center
+        facebookLoginButton.frame = CGRect(x: 30, y: loginButton.bottom + 10, width:  scrollView.width - 60, height: 52)
+    }
+    
     private func addAllSubViews()
     {
         view.addSubview(scrollView)
@@ -132,6 +150,7 @@ class LoginViewController: UIViewController {
         scrollView.addSubview(emailField)
         scrollView.addSubview(passwordField)
         scrollView.addSubview(loginButton)
+        scrollView.addSubview(facebookLoginButton)
     }
     
     
@@ -158,7 +177,7 @@ class LoginViewController: UIViewController {
             case .success(let successString):
                 print(successString)
                 DispatchQueue.main.async {
-                    self?.dismiss(animated: true, completion: nil)
+                    self?.navigationController?.dismiss(animated: true, completion: nil)
                 }
             
             case .failure(let error):
@@ -185,7 +204,7 @@ class LoginViewController: UIViewController {
     // MARK: - Firebase Functions
     private func logInUserWithFirebase(email : String, password : String, completion : @escaping (Result<String,Error>) -> Void)
     {
-        firebaseObject.signIn(withEmail: email, password: password) { authDataResult, error in
+        firebaseAuthObject.signIn(withEmail: email, password: password) { authDataResult, error in
             guard let result = authDataResult, error == nil else {
                 completion(.failure(error!))
                 return
@@ -194,19 +213,40 @@ class LoginViewController: UIViewController {
             print(result.user)
             let signInSuccess = "Sign in successful"
             // pass in the value to user defaults here
-            UserDefaults.standard.setValue(true, forKey: UserDefaultKeys.isUserLoggedInKey)
             completion(.success(signInSuccess))
+        }
+    }
+    
+    private func signInUserWithFirebaseCredential(credentialToUse : AuthCredential)
+    {
+        firebaseAuthObject.signIn(with: credentialToUse) {[weak self] authResult, error in
+            guard authResult != nil, error == nil else {
+                if let error = error {
+                    print("Facebook login credential failed.\(error)")
+                }
+                return
+            }
+            // success here
+            print("Success")
+            self?.navigationController?.dismiss(animated: true, completion: nil)
         }
     }
     
     private func alertUserOfSignInError()
     {
-        let alertController = UIAlertController(title: "Whoops", message: "There was an error signing you in please make sure that ", preferredStyle: .alert)
+        let alertController = UIAlertController(title: "Whoops", message: "There was an error signing you in please make sure that the email and password provided is correct.", preferredStyle: .alert)
         let alertAction = UIAlertAction(title: "Ok", style: .default, handler: nil)
         alertController.addAction(alertAction)
         present(alertController, animated: true)
     }
     
+    private func alertUserOfFacebookSignInError()
+    {
+        let alertController = UIAlertController(title: "Whoops", message: "There was an error signing you in with Facebook please try again.", preferredStyle: .alert)
+        let alertAction = UIAlertAction(title: "Ok", style: .default, handler: nil)
+        alertController.addAction(alertAction)
+        present(alertController, animated: true)
+    }
     
 }
 
@@ -224,5 +264,25 @@ extension LoginViewController : UITextFieldDelegate
         return true
     }
     
+    // stopped at 24:56
     
+}
+
+extension LoginViewController : LoginButtonDelegate
+{
+    func loginButtonDidLogOut(_ loginButton: FBLoginButton) {
+        // no operation
+    }
+    
+    func loginButton(_ loginButton: FBLoginButton, didCompleteWith result: LoginManagerLoginResult?, error: Error?)
+    {
+        guard let tokenAsString = result?.token?.tokenString else
+        {
+            print("Failed to login with Facebook")
+            return
+        }
+        // so this is where we need to exchange our token for a firebase token
+        let firebaseCredential = FacebookAuthProvider.credential(withAccessToken: tokenAsString)
+        signInUserWithFirebaseCredential(credentialToUse: firebaseCredential)
+    }
 }
