@@ -17,7 +17,6 @@ class ConversationsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Converations"
-        view.backgroundColor = .red
         // Do any additional setup after loading the view.
     }
     
