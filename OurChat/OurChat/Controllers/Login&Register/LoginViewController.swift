@@ -8,11 +8,15 @@
 import UIKit
 import FBSDKLoginKit
 import FirebaseAuth
+import FirebaseCore
+import GoogleSignIn
 
 class LoginViewController: UIViewController {
 
     // properties
     let firebaseAuthObject = FirebaseAuth.Auth.auth()
+    let databaseManager = DatabaseManager.shared
+    let GIDSignInSharedInstance = GIDSignIn.sharedInstance
     
     
     // UI properties
@@ -78,8 +82,15 @@ class LoginViewController: UIViewController {
         return loginButton
     }()
     
+    private let googleSignInButton : GIDSignInButton = {
+        let googleLoginButton = GIDSignInButton()
+        googleLoginButton.layer.cornerRadius = 12
+        googleLoginButton.layer.masksToBounds = true
+        return googleLoginButton
+    }()
     
-    // System called functions
+    
+    // MARK: - System called functions
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Log In"
@@ -98,6 +109,7 @@ class LoginViewController: UIViewController {
         initializePasswordField()
         initializeLoginButton()
         initializeFBLoginButton()
+        initializeGoogleSignInButton()
     }
     
     
@@ -143,6 +155,14 @@ class LoginViewController: UIViewController {
         facebookLoginButton.frame = CGRect(x: 30, y: loginButton.bottom + 10, width:  scrollView.width - 60, height: 52)
     }
     
+    private func initializeGoogleSignInButton()
+    {
+        googleSignInButton.addTarget(self, action: #selector(googleLoginButtonTapped), for: .touchUpInside)
+        googleSignInButton.center = scrollView.center
+        googleSignInButton.frame = CGRect(x: 30, y: facebookLoginButton.bottom + 10, width: scrollView.width - 60, height:  52)
+        
+    }
+    
     private func addAllSubViews()
     {
         view.addSubview(scrollView)
@@ -151,6 +171,7 @@ class LoginViewController: UIViewController {
         scrollView.addSubview(passwordField)
         scrollView.addSubview(loginButton)
         scrollView.addSubview(facebookLoginButton)
+        scrollView.addSubview(googleSignInButton)
     }
     
     
@@ -187,7 +208,11 @@ class LoginViewController: UIViewController {
                 }
             }
         }
-        
+    }
+    
+    @objc private func googleLoginButtonTapped()
+    {
+        signUserInWithGoogle()
     }
 
     // MARK: - Functions
@@ -212,8 +237,60 @@ class LoginViewController: UIViewController {
             // here we have a success
             print(result.user)
             let signInSuccess = "Sign in successful"
-            // pass in the value to user defaults here
+            // here we want to store the logged in users email into userDefaults. 
             completion(.success(signInSuccess))
+        }
+    }
+    
+    private func signUserInWithGoogle()
+    {
+        guard let clientID = FirebaseApp.app()?.options.clientID else {return}
+        
+        // Create Google Sign In configuration object
+        let config = GIDConfiguration(clientID: clientID)
+        
+        // Start the sign in flow
+        GIDSignInSharedInstance.signIn(with: config, presenting: self) {[weak self] user, error in
+            if let errorPresent = error
+            {
+                print("There was an error signing in with google: \(errorPresent)")
+                return
+            }
+            guard let authenticaton = user?.authentication,
+                  let idToken = authenticaton.idToken else {
+                return
+            }
+            let googleCredential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: authenticaton.accessToken)
+            
+            // getting the info to create our ChatAppUser object
+            guard let safeUser = user else {return}
+            guard let newChatAppUserEmail = safeUser.profile?.email,
+                  let newChatAppUserFirstName = safeUser.profile?.givenName,
+                  let newChatAppUserLastName = safeUser.profile?.familyName else {return}
+            
+            let newChatAppUser = ChatAppUser(firstNameVal: newChatAppUserFirstName, lastNameVal: newChatAppUserLastName, emailVal: newChatAppUserEmail)
+            
+            // checking if user exists in the DB
+            self?.databaseManager.checkIfUserExistsInDB(chatAppUserToCheck: newChatAppUser) { result in
+                switch result {
+                case true:
+                    self?.signInUserWithFirebaseCredential(credentialToUse: googleCredential)
+                    return
+                case false:
+                    self?.databaseManager.writeNewUserToDB(chatAppUserToInsert: newChatAppUser, completion: { databaseManagerWriteResult in
+                        switch databaseManagerWriteResult {
+                        case .success(let success):
+                            print("Successfully wrote ChatAppUser to the database in sign in with google method \(success)")
+                            self?.signInUserWithFirebaseCredential(credentialToUse: googleCredential)
+                            return
+                        case .failure(let error):
+                            print("Unable to add user to database running from sign user in with google method: \(error)")
+                            // we also want to present some kind of error message to the user to let them know what is going on.
+                            return
+                        }
+                    })
+                }
+            }
         }
     }
     
@@ -222,12 +299,12 @@ class LoginViewController: UIViewController {
         firebaseAuthObject.signIn(with: credentialToUse) {[weak self] authResult, error in
             guard authResult != nil, error == nil else {
                 if let error = error {
-                    print("Facebook login credential failed.\(error)")
+                    print("credential failed.\(error)")
                 }
                 return
             }
             // success here
-            print("Success")
+            print("Success in signing user in with firebase credential.")
             self?.navigationController?.dismiss(animated: true, completion: nil)
         }
     }
@@ -264,7 +341,6 @@ extension LoginViewController : UITextFieldDelegate
         return true
     }
     
-    // stopped at 24:56
     
 }
 
@@ -272,6 +348,7 @@ extension LoginViewController : LoginButtonDelegate
 {
     func loginButtonDidLogOut(_ loginButton: FBLoginButton) {
         // no operation
+        // logout operations 
     }
     
     func loginButton(_ loginButton: FBLoginButton, didCompleteWith result: LoginManagerLoginResult?, error: Error?)
@@ -283,6 +360,69 @@ extension LoginViewController : LoginButtonDelegate
         }
         // so this is where we need to exchange our token for a firebase token
         let firebaseCredential = FacebookAuthProvider.credential(withAccessToken: tokenAsString)
-        signInUserWithFirebaseCredential(credentialToUse: firebaseCredential)
+        callFBGraphRequest(facebookTokenString: tokenAsString) {[weak self] result in
+            switch result {
+            case true:
+                self?.signInUserWithFirebaseCredential(credentialToUse: firebaseCredential)
+            case false:
+                print("Error in signing user in Facebook")
+            }
+        }
+    }
+    
+   
+    
+    
+    /// Starts GraphRequest so we can populate the database if the user does not exist and if they do already exist we simply return from the function
+    func callFBGraphRequest(facebookTokenString : String, completion : @escaping (Bool) -> Void)
+    {
+        let facebookGraphRequest = FBSDKLoginKit.GraphRequest(graphPath: "me", parameters: ["fields" : "email, first_name, last_name"], tokenString: facebookTokenString, version: nil, httpMethod: .get)
+        facebookGraphRequest.start { [weak self] _, result, error in
+            guard let safeResult = result as? [String : Any], error == nil else{
+                print("Graph Request has failed")
+                return
+            }
+            
+            // now we need to extract the necessary information from the fields
+            guard let firstName = safeResult["first_name"] as? String else{
+                completion(false)
+                return
+            }
+            guard let lastName = safeResult["last_name"] as? String else{
+                completion(false)
+                return}
+            guard let email = safeResult["email"] as? String else {
+                completion(false)
+                return}
+            print(firstName)
+            print(lastName)
+            print(email)
+            
+            // now we need to create our ChatAppUser, make sure that email does not already exist and if it does not we pass in false into our completion handler
+            let newChatAppUser = ChatAppUser(firstNameVal: firstName, lastNameVal: lastName, emailVal: email)
+            self?.databaseManager.checkIfUserExistsInDB(chatAppUserToCheck: newChatAppUser, completion: { result in
+                if result == true
+                {
+                    // here this means the user already exists
+                    completion(true)
+                    return
+                }
+                // so when we get here this means that the use does not exist
+                else
+                {
+                    self?.databaseManager.writeNewUserToDB(chatAppUserToInsert: newChatAppUser, completion: { result in
+                        switch result {
+                        case .success(let sucess):
+                            print(sucess)
+                            print("Successfully signed new user in with Facebook and wrote to the database")
+                            completion(true)
+                        case .failure(let error):
+                            print(error)
+                            completion(false)
+                        }
+                    })
+                }
+            })
+        }
     }
 }
