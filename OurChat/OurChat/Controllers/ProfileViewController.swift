@@ -7,6 +7,8 @@
 
 import UIKit
 import FirebaseAuth
+import FBSDKLoginKit
+import GoogleSignIn
 
 class ProfileViewController: UIViewController, UITableViewDataSource {
 
@@ -71,12 +73,16 @@ extension ProfileViewController: UITableViewDelegate
     
     func signOutWithFirebase()
     {
+        // facebook and google signout
+        signUserOutOfFacebook()
+        GIDSignIn.sharedInstance.signOut()
         do
         {
             try FirebaseAuth.Auth.auth().signOut()
             let vc = LoginViewController()
             let nav = UINavigationController(rootViewController: vc)
             nav.modalPresentationStyle = .fullScreen
+            // here is where we want to clear the userDefaults curently logged in user email.
             present(nav, animated: true)
         }
         catch
@@ -85,5 +91,10 @@ extension ProfileViewController: UITableViewDelegate
         }
     }
     
+    func signUserOutOfFacebook()
+    {
+       let loginManager = LoginManager()
+        loginManager.logOut()
+    }
     
 }
