@@ -10,6 +10,7 @@ import FBSDKLoginKit
 import FirebaseAuth
 import FirebaseCore
 import GoogleSignIn
+import JGProgressHUD
 
 class LoginViewController: UIViewController {
 
@@ -89,6 +90,7 @@ class LoginViewController: UIViewController {
         return googleLoginButton
     }()
     
+    private let spinner = JGProgressHUD(style: .dark)
     
     // MARK: - System called functions
     override func viewDidLoad() {
@@ -192,12 +194,14 @@ class LoginViewController: UIViewController {
             return
         }
         // implement fireabse login
+        spinner.show(in: view)
         logInUserWithFirebase(email: email, password: password) {[weak self] result in
             switch result {
                 
             case .success(let successString):
                 print(successString)
                 DispatchQueue.main.async {
+                    self?.spinner.dismiss()
                     self?.navigationController?.dismiss(animated: true, completion: nil)
                 }
             
@@ -244,6 +248,7 @@ class LoginViewController: UIViewController {
     
     private func signUserInWithGoogle()
     {
+        spinner.show(in: view)
         guard let clientID = FirebaseApp.app()?.options.clientID else {return}
         
         // Create Google Sign In configuration object
@@ -281,9 +286,15 @@ class LoginViewController: UIViewController {
                         switch databaseManagerWriteResult {
                         case .success(let success):
                             print("Successfully wrote ChatAppUser to the database in sign in with google method \(success)")
+                            DispatchQueue.main.async {
+                                self?.spinner.dismiss()
+                            }
                             self?.signInUserWithFirebaseCredential(credentialToUse: googleCredential)
                             return
                         case .failure(let error):
+                            DispatchQueue.main.async {
+                                self?.spinner.dismiss()
+                            }
                             print("Unable to add user to database running from sign user in with google method: \(error)")
                             // we also want to present some kind of error message to the user to let them know what is going on.
                             return
@@ -292,6 +303,7 @@ class LoginViewController: UIViewController {
                 }
             }
         }
+        spinner.dismiss()
     }
     
     private func signInUserWithFirebaseCredential(credentialToUse : AuthCredential)
@@ -353,6 +365,7 @@ extension LoginViewController : LoginButtonDelegate
     
     func loginButton(_ loginButton: FBLoginButton, didCompleteWith result: LoginManagerLoginResult?, error: Error?)
     {
+        spinner.show(in: view)
         guard let tokenAsString = result?.token?.tokenString else
         {
             print("Failed to login with Facebook")
@@ -363,6 +376,9 @@ extension LoginViewController : LoginButtonDelegate
         callFBGraphRequest(facebookTokenString: tokenAsString) {[weak self] result in
             switch result {
             case true:
+                DispatchQueue.main.async {
+                    self?.spinner.dismiss()
+                }
                 self?.signInUserWithFirebaseCredential(credentialToUse: firebaseCredential)
             case false:
                 print("Error in signing user in Facebook")
@@ -414,7 +430,7 @@ extension LoginViewController : LoginButtonDelegate
                         switch result {
                         case .success(let sucess):
                             print(sucess)
-                            print("Successfully signed new user in with Facebook and wrote to the database")
+                            print("Successfully wrote to the database")
                             completion(true)
                         case .failure(let error):
                             print(error)
