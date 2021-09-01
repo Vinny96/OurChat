@@ -8,12 +8,14 @@
 import UIKit
 import PhotosUI
 import FirebaseAuth
+import FirebaseStorage
 
 class RegisterViewController: UIViewController {
 
     // properties
     let firebaseAuthObject = FirebaseAuth.Auth.auth()
-    
+    let firebaseStorageRef = StorageManager.shared
+
     
     // UI properties
     private let profilePictureImageView : UIImageView = {
@@ -109,6 +111,7 @@ class RegisterViewController: UIViewController {
     // System called functions
     override func viewDidLoad() {
         super.viewDidLoad()
+        print(NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).last! as String)
         title = "Register"
         view.backgroundColor = .white
         addAllSubViews()
@@ -281,7 +284,7 @@ class RegisterViewController: UIViewController {
     {
         let ChatAppUser = ChatAppUser(firstNameVal: firstName, lastNameVal: lastName, emailVal: email)
         
-        firebaseAuthObject.createUser(withEmail: ChatAppUser.email, password: password) { authDataResult, error in
+        firebaseAuthObject.createUser(withEmail: ChatAppUser.email, password: password) {[weak self] authDataResult, error in
             guard let dataResult = authDataResult, error == nil else {
                 completion(.failure(error!))
                 return
@@ -289,6 +292,25 @@ class RegisterViewController: UIViewController {
             // success
             print(dataResult.user)
             let successString = "Successfully registered the user with Firebase"
+           
+            // so here is where we now want to upload the pngData to firebase storage
+            let urlFileName = ChatAppUser.profilePictureURLFileName
+            guard let profilePicturePNGData = self?.profilePictureImageView.image?.pngData() else {return}
+            
+            self?.firebaseStorageRef.uploadProfilePictureToStorage(dataToUpload: profilePicturePNGData, fileName: urlFileName) { result in
+                switch result {
+               
+                case .success(let downloadURLAsString):
+                    // here we are caching the downloadURLAsString
+                    print("success in getting downloadURL: \(downloadURLAsString) ")
+                    UserDefaults.standard.set(downloadURLAsString, forKey: UserDefaultKeys.userProfilePictureDownloadURLKey)
+                    
+                case .failure(let error):
+                    print("There was an error in getting the downloadURL for the users profile picture: \(error)")
+                    completion(.failure(error))
+                    return
+                }
+            }
             completion(.success(successString))
         }
     }

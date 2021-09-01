@@ -17,6 +17,7 @@ class LoginViewController: UIViewController {
     // properties
     let firebaseAuthObject = FirebaseAuth.Auth.auth()
     let databaseManager = DatabaseManager.shared
+    let storageManager = StorageManager.shared
     let GIDSignInSharedInstance = GIDSignIn.sharedInstance
     
     
@@ -246,6 +247,42 @@ class LoginViewController: UIViewController {
         }
     }
     
+    private func uploadGoogleUserProfPicToStorage(googleUser : GIDGoogleUser, newChatAppUser : ChatAppUser)
+    {
+        // first thing is we need to check to see if the user has a profile picture
+        guard let profile = googleUser.profile else{return}
+        if(profile.hasImage == false)
+        {
+            print("User has no profile picture.")
+            return
+        }
+        
+        guard let userProfileImageURL = googleUser.profile?.imageURL(withDimension: 200) else {return}
+        
+        // now that we have gotten the url we need to get the bytes from it and upload that to firebase storage. We then save the download URL to UserDefaults
+        URLSession.shared.dataTask(with: userProfileImageURL) {[weak self] data, _, error in
+            guard let safeData = data, error == nil else{
+                print(error ?? "Error")
+                return
+            }
+            // success
+            self?.storageManager.uploadProfilePictureToStorage(dataToUpload: safeData, fileName: newChatAppUser.profilePictureURLFileName, completion: { result in
+                switch result
+                {
+                case .success(let downloadURL):
+                    print("Successfully got the downloadURL from the google signIn portion.")
+                    print(downloadURL) // debugging purposes
+                    UserDefaults.standard.set(downloadURL, forKey: UserDefaultKeys.userProfilePictureDownloadURLKey)
+                    return
+                case .failure(let storageManagerError):
+                    print("There was an error in getting the downloadURL from the google signIn portion : \(storageManagerError)")
+                    return
+                }
+            })
+        }.resume()
+    }
+    
+    
     private func signUserInWithGoogle()
     {
         spinner.show(in: view)
@@ -278,14 +315,17 @@ class LoginViewController: UIViewController {
             // checking if user exists in the DB
             self?.databaseManager.checkIfUserExistsInDB(chatAppUserToCheck: newChatAppUser) { result in
                 switch result {
+                
                 case true:
                     self?.signInUserWithFirebaseCredential(credentialToUse: googleCredential)
                     return
+                
                 case false:
                     self?.databaseManager.writeNewUserToDB(chatAppUserToInsert: newChatAppUser, completion: { databaseManagerWriteResult in
                         switch databaseManagerWriteResult {
                         case .success(let success):
                             print("Successfully wrote ChatAppUser to the database in sign in with google method \(success)")
+                            self?.uploadGoogleUserProfPicToStorage(googleUser: safeUser, newChatAppUser: newChatAppUser)
                             DispatchQueue.main.async {
                                 self?.spinner.dismiss()
                             }
@@ -386,13 +426,31 @@ extension LoginViewController : LoginButtonDelegate
         }
     }
     
-   
+    func uploadFBProfilePicDataToStorage(with urlAsString : String, newChatAppUser : ChatAppUser)
+    {
+        guard let url = URL(string: urlAsString) else{return}
+        URLSession.shared.dataTask(with: url) {[weak self] data, _, error in
+            guard let safeData = data, error == nil else{
+                print("There was an error in getting the data from the profile picture url.")
+                return
+            }
+            // success
+            self?.storageManager.uploadProfilePictureToStorage(dataToUpload: safeData, fileName: newChatAppUser.profilePictureURLFileName, completion: { result in
+                switch result {
+                case .success(let downloadURL):
+                    print(downloadURL)
+                case .failure(let storageError):
+                    print("There was an error from FBGraphRequest section: \(storageError)")
+                }
+            })
+        }.resume()
+    }
     
     
     /// Starts GraphRequest so we can populate the database if the user does not exist and if they do already exist we simply return from the function
     func callFBGraphRequest(facebookTokenString : String, completion : @escaping (Bool) -> Void)
     {
-        let facebookGraphRequest = FBSDKLoginKit.GraphRequest(graphPath: "me", parameters: ["fields" : "email, first_name, last_name"], tokenString: facebookTokenString, version: nil, httpMethod: .get)
+        let facebookGraphRequest = FBSDKLoginKit.GraphRequest(graphPath: "me", parameters: ["fields" : "email, first_name, last_name, picture.type(large)"], tokenString: facebookTokenString, version: nil, httpMethod: .get)
         facebookGraphRequest.start { [weak self] _, result, error in
             guard let safeResult = result as? [String : Any], error == nil else{
                 print("Graph Request has failed")
@@ -400,6 +458,16 @@ extension LoginViewController : LoginButtonDelegate
             }
             
             // now we need to extract the necessary information from the fields
+            guard let pictureDictionary = safeResult["picture"] as? [String : Any] else {
+                print("Graph Request has failed in getting the picture dictionary")
+                return
+            }
+            
+            // we need to get the data out of the picture dictionary then get the URL from it.
+            guard let profilePictureDataDict = pictureDictionary["data"] as? [String : Any] else{return}
+            guard let fbProfilePicURL = profilePictureDataDict["url"] as? String else{return}
+            print(fbProfilePicURL)
+            
             guard let firstName = safeResult["first_name"] as? String else{
                 completion(false)
                 return
@@ -431,6 +499,7 @@ extension LoginViewController : LoginButtonDelegate
                         case .success(let sucess):
                             print(sucess)
                             print("Successfully wrote to the database")
+                            self?.uploadFBProfilePicDataToStorage(with: fbProfilePicURL, newChatAppUser: newChatAppUser)
                             completion(true)
                         case .failure(let error):
                             print(error)
