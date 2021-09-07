@@ -54,7 +54,8 @@ class ConversationsViewController: UIViewController {
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        tableView.frame = view.bounds
+        initializeTableView()
+        initializeNoConversationsLabel()
     }
     
     
@@ -64,11 +65,27 @@ class ConversationsViewController: UIViewController {
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .compose, target: self, action: #selector(didTapComposeButton))
     }
     
+    private func initializeTableView()
+    {
+        tableView.frame = view.bounds
+    }
+    
+    private func initializeNoConversationsLabel()
+    {
+        noConversationsLabel.frame = CGRect(x: view.width / 4, y: (view.height - 200) / 2, width: view.width, height: 200)
+    }
     
     // MARK: - OBJC Functions
     @objc private func didTapComposeButton()
     {
         let vc = NewConversationViewController()
+        vc.completion = {[weak self] result in
+            guard let strongSelf = self else{return}
+            DispatchQueue.main.async {
+                strongSelf.createNewConversation(result: result)
+            }
+        }
+        
         let navigationController = UINavigationController(rootViewController: vc)
         navigationController.modalPresentationStyle = .fullScreen
         present(navigationController, animated: true, completion: nil)
@@ -88,6 +105,17 @@ class ConversationsViewController: UIViewController {
     {
         tableView.delegate = self
         tableView.dataSource = self
+    }
+    
+    private func createNewConversation(result : [String : String])
+    {
+        guard let fullName = result["full_name"],
+              let recipientEmail = result["safe_email"] else{return}
+        let vc = ChatViewController(with: recipientEmail)
+        vc.title = fullName
+        vc.navigationItem.largeTitleDisplayMode = .never
+        navigationController?.pushViewController(vc, animated:  true)
+        
     }
     
     private func checkIfUserIsLoggedIn()
@@ -128,10 +156,10 @@ extension ConversationsViewController : UITableViewDelegate, UITableViewDataSour
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        let vc = ChatViewController() // will be extended and instantiated with the name of the user we want to chat with
-        vc.title = "Jenny Smith"
-        vc.navigationItem.largeTitleDisplayMode = .never
-        navigationController?.pushViewController(vc, animated: true)
+        //let vc = ChatViewController() // will be extended and instantiated with the name of the user we want to chat with
+      //  vc.title = "Jenny Smith"
+      //  vc.navigationItem.largeTitleDisplayMode = .never
+      //  navigationController?.pushViewController(vc, animated: true)
     }
     
 }
