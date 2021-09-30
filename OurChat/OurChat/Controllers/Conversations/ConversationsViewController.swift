@@ -14,13 +14,14 @@ class ConversationsViewController: UIViewController {
     // properties
     var standardUserDefaults = UserDefaults.standard
     var firebaseObject = FirebaseAuth.Auth.auth()
+    var sharedDatabaseObj = DatabaseManager.shared
     
     
     // UI Properties
     private let tableView : UITableView = {
         let table = UITableView()
         table.isHidden = true
-        table.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
+        table.register(ConversationTableViewCell.self, forCellReuseIdentifier: ConversationTableViewCell.identifier)
         return table
     }()
     
@@ -35,6 +36,7 @@ class ConversationsViewController: UIViewController {
     }()
     
     private let spinner = JGProgressHUD(style: .dark)
+    private var conversationsArray = [Conversation]() // this is the array that our tableView is going to use to load in all of the objects
     
 
     // MARK: - System Called Functions
@@ -45,6 +47,7 @@ class ConversationsViewController: UIViewController {
         addSubviews()
         setupTableView()
         fetchConversations()
+        startListeningForConversations()
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -111,11 +114,11 @@ class ConversationsViewController: UIViewController {
     {
         guard let fullName = result["full_name"],
               let recipientEmail = result["safe_email"] else{return}
-        let vc = ChatViewController(with: recipientEmail)
+        let vc = ChatViewController(with: recipientEmail, with: fullName)
         vc.title = fullName
+        vc.isNewConversation = true
         vc.navigationItem.largeTitleDisplayMode = .never
         navigationController?.pushViewController(vc, animated:  true)
-        
     }
     
     private func checkIfUserIsLoggedIn()
@@ -134,13 +137,43 @@ class ConversationsViewController: UIViewController {
         // fetch conversations from firebase
         tableView.isHidden = false
     }
+    
+    /// this is what is going to call the Database getAllConversations and within the event callback which is called everytime there is a change in the conversations we want to then update the tableView here
+    private func startListeningForConversations()
+    {
+        guard let userSafeEmail = standardUserDefaults.value(forKey: UserDefaultKeys.loggedInUserSafeEmail) as? String else {return}
+        sharedDatabaseObj.getAllConversations(for: userSafeEmail) {[weak self] result in
+            guard let strongSelf = self else {return}
+            switch result
+            {
+            case .success(let conversations):
+                guard !conversations.isEmpty else {return}
+                strongSelf.conversationsArray = conversations
+                print(strongSelf.conversationsArray)
+                DispatchQueue.main.async {
+                    strongSelf.tableView.isHidden = false
+                    strongSelf.tableView.reloadData()
+                }
+                // we then want to call our ui method that will udpate the tableview and show the updated/new conversations
+            case .failure(let error):
+                print(error)
+                return
+            }
+        }
+    }
+    
+    
 }
 //MARK: - Extensions
 
 extension ConversationsViewController : UITableViewDelegate, UITableViewDataSource
 {
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 120
+    }
+    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 1
+        return conversationsArray.count
     }
     
     func numberOfSections(in tableView: UITableView) -> Int {
@@ -148,9 +181,9 @@ extension ConversationsViewController : UITableViewDelegate, UITableViewDataSour
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-        cell.accessoryType = .disclosureIndicator
-        cell.textLabel?.text = "Hello World"
+        let model = conversationsArray[indexPath.row]
+        let cell = tableView.dequeueReusableCell(withIdentifier: ConversationTableViewCell.identifier, for: indexPath) as! ConversationTableViewCell
+        cell.configure(with: model)
         return cell
     }
     
@@ -163,3 +196,4 @@ extension ConversationsViewController : UITableViewDelegate, UITableViewDataSour
     }
     
 }
+// stopped at 15:52
