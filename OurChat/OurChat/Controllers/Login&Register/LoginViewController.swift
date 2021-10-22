@@ -209,6 +209,7 @@ class LoginViewController: UIViewController {
             case .failure(let error):
                 print(error)
                 DispatchQueue.main.async {
+                    self?.spinner.dismiss()
                     self?.alertUserOfSignInError()
                 }
             }
@@ -234,7 +235,7 @@ class LoginViewController: UIViewController {
     // MARK: - Firebase Functions
     private func logInUserWithFirebase(email : String, password : String, completion : @escaping (Result<String,Error>) -> Void)
     {
-        firebaseAuthObject.signIn(withEmail: email, password: password) { authDataResult, error in
+        firebaseAuthObject.signIn(withEmail: email, password: password) {[weak self] authDataResult, error in
             guard let result = authDataResult, error == nil else {
                 completion(.failure(error!))
                 return
@@ -242,7 +243,8 @@ class LoginViewController: UIViewController {
             // here we have a success
             print(result.user)
             let signInSuccess = "Sign in successful"
-            // here we want to store the logged in users email into userDefaults. 
+            // here we want to store the logged in users email into userDefaults.
+            self?.saveLoggedInUserSafeEmailToUserDefaults(emailToSave: email)
             completion(.success(signInSuccess))
         }
     }
@@ -311,26 +313,33 @@ class LoginViewController: UIViewController {
                   let newChatAppUserLastName = safeUser.profile?.familyName else {return}
             
             let newChatAppUser = ChatAppUser(firstNameVal: newChatAppUserFirstName, lastNameVal: newChatAppUserLastName, emailVal: newChatAppUserEmail)
+
             
             // checking if user exists in the DB
             self?.databaseManager.checkIfUserExistsInDB(chatAppUserToCheck: newChatAppUser) { result in
                 switch result {
                 
                 case true:
+                    self?.createAndSaveLoggedInUserFullName(userFirstName: newChatAppUserFirstName, userLastName: newChatAppUserLastName)
+                    self?.saveLoggedInUserSafeEmailToUserDefaults(emailToSave: newChatAppUserEmail)
                     self?.signInUserWithFirebaseCredential(credentialToUse: googleCredential)
                     return
                 
                 case false:
                     self?.databaseManager.writeNewUserToDB(chatAppUserToInsert: newChatAppUser, completion: { databaseManagerWriteResult in
                         switch databaseManagerWriteResult {
+                        
                         case .success(let success):
                             print("Successfully wrote ChatAppUser to the database in sign in with google method \(success)")
                             self?.uploadGoogleUserProfPicToStorage(googleUser: safeUser, newChatAppUser: newChatAppUser)
                             DispatchQueue.main.async {
                                 self?.spinner.dismiss()
                             }
+                            self?.createAndSaveLoggedInUserFullName(userFirstName: newChatAppUserFirstName, userLastName: newChatAppUserLastName)
+                            self?.saveLoggedInUserSafeEmailToUserDefaults(emailToSave: newChatAppUserEmail)
                             self?.signInUserWithFirebaseCredential(credentialToUse: googleCredential)
                             return
+                        
                         case .failure(let error):
                             DispatchQueue.main.async {
                                 self?.spinner.dismiss()
@@ -447,6 +456,8 @@ extension LoginViewController : LoginButtonDelegate
     }
     
     
+    
+    
     /// Starts GraphRequest so we can populate the database if the user does not exist and if they do already exist we simply return from the function
     func callFBGraphRequest(facebookTokenString : String, completion : @escaping (Bool) -> Void)
     {
@@ -488,12 +499,15 @@ extension LoginViewController : LoginButtonDelegate
                 if result == true
                 {
                     // here this means the user already exists
+                    self?.saveLoggedInUserSafeEmailToUserDefaults(emailToSave: email)
+                    self?.createAndSaveLoggedInUserFullName(userFirstName: firstName, userLastName: lastName)
                     completion(true)
                     return
                 }
                 // so when we get here this means that the use does not exist
                 else
                 {
+                    self?.saveLoggedInUserSafeEmailToUserDefaults(emailToSave: email)
                     self?.databaseManager.writeNewUserToDB(chatAppUserToInsert: newChatAppUser, completion: { result in
                         switch result {
                         case .success(let sucess):
@@ -509,5 +523,20 @@ extension LoginViewController : LoginButtonDelegate
                 }
             })
         }
+    }
+    
+    // auxillary function
+    func saveLoggedInUserSafeEmailToUserDefaults(emailToSave : String)
+    {
+        var newEmail = emailToSave.replacingOccurrences(of: ".", with: "-")
+        newEmail = newEmail.replacingOccurrences(of: "@", with: "-")
+        UserDefaults.standard.set(newEmail, forKey: UserDefaultKeys.loggedInUserSafeEmail)
+    }
+    
+    func createAndSaveLoggedInUserFullName(userFirstName : String, userLastName : String)
+    {
+        let userFullName = userFirstName + " " + userLastName
+        UserDefaults.standard.set(userFullName, forKey: UserDefaultKeys.loggedInUserName)
+        
     }
 }

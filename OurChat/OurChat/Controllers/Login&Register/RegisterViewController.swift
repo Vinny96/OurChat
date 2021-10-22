@@ -311,6 +311,9 @@ class RegisterViewController: UIViewController {
                     return
                 }
             }
+            let userFullName = ChatAppUser.firstName + " " + ChatAppUser.lastName
+            UserDefaults.standard.set(userFullName, forKey: UserDefaultKeys.userProfilePictureDownloadURLKey)
+            UserDefaults.standard.set(ChatAppUser.safeEmail, forKey: UserDefaultKeys.loggedInUserSafeEmail)
             completion(.success(successString))
         }
     }
