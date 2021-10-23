@@ -439,7 +439,6 @@ extension DatabaseManager
                 let messageToReturn = Message(sender: sender , messageId: id, sentDate: dateStringAsDate, kind: .text(content))
                 return messageToReturn
             })
-            print("These are the following messages in the conversation: \(messages)")
             completion(.success(messages))
         }
     }
@@ -448,10 +447,7 @@ extension DatabaseManager
     /// Sends a message with target conversation and message 
     internal func sendMessageToConversation(to conversation : String, message : Message, recipientName : String, recipientEmail : String, completion : @escaping (Bool) -> Void)
     {
-        // so we need to send the message to the conversation child in the database. Completed
-        // we also need to update the latest message in the conversations array for both the sender and the recipient. The specific object we need to access is in the conversations array.
-        
-        // inplementing sending the message to the conversations child in the database
+        // implementing sending the message to the conversations child in the database
         databaseReference.child("\(conversation)/messages").observeSingleEvent(of: .value) {[weak self] dataSnapShot in
             guard let strongSelf = self else {return}
             guard var currentMessages = dataSnapShot.value as? [[String : Any]] else {
@@ -473,14 +469,92 @@ extension DatabaseManager
                     return
                 }
                 // success now we want to update the conversation object for both the loggedInUser and the recipient user.
-                
-                
+                strongSelf.updateConversationObjectWithLatestMessage(userEmail: senderEmail, conversationID: conversation, latestMessageObjToAppend: messageObjToAppend) { result in
+                    switch result
+                    {
+                    case true:
+                        print("Success in  updating the conversations object for loggedInUser")
+                        // now we have to update the conversations object for the recipient user
+                        strongSelf.updateConversationObjectWithLatestMessage(userEmail: recipientEmail, conversationID: conversation, latestMessageObjToAppend: messageObjToAppend) { resultTwo in
+                            switch resultTwo
+                            {
+                            case true:
+                                print("Success in updating the conversation object for the recipient user")
+                                completion(true)
+                            
+                            case false:
+                                print("Failure in updating the conversation object for the recipient user.")
+                                completion(false)
+                            }
+                        }
+                    
+                    case false:
+                        print("Error in updating the conversations object for the loggedInUser and recipient user")
+                        completion(false)
+                    }
+                }
             }
         }
         
     }
     
-    ///
+    ///Will update the entry in the users conversation object with the latest message that was sent. This is so this latest message can be shown in the conversations view controller
+    private func updateConversationObjectWithLatestMessage(userEmail : String, conversationID : String, latestMessageObjToAppend : [String : Any] ,completion : @escaping (Bool) -> Void)
+    {
+        // first thing we need to do is define the path in which our converstions object would exist
+        let path = ("\(userEmail)/conversations")
+        databaseReference.child(path).observeSingleEvent(of: .value) {[weak self] dataSnapShot in
+            guard let strongSelf = self else {return}
+            guard var conversationsDict = dataSnapShot.value as? [[String : Any]] else {
+                print("Running here as the conversationsDict is not present")
+                completion(false)
+                return
+            }
+            // now that we got the conversations array we have to check each dictionary to see if the conversationID matches the one from the parameter
+            // we also want to keep track of the index so we can insert our new dict into that particular index
+            var position = 0
+            var dictToModify : [String : Any]?
+            for dict in conversationsDict
+            {
+                guard let safeConvoID = dict["conversation_id"] as? String else {return}
+                if(safeConvoID == conversationID)
+                {
+                    dictToModify = dict
+                    break
+                }
+                position += 1
+            }
+            // so now that we know the position in the array in which we have to modify we can modify the dict directly and insert the modified dict into the conversations dict at the specified position
+            guard var safeDictToModify = dictToModify else {
+                print("There is no dictionary to modify")
+                return
+            }
+            guard let dateAsString = latestMessageObjToAppend["date"] as? String else {return}
+            guard let isRead = latestMessageObjToAppend["is_read"] as? Bool else {return}
+            guard let message = latestMessageObjToAppend["content"] as? String else {return}
+            
+            let latestMessageToAddToConversation : [String : Any] = [
+                "date" : dateAsString,
+                "is_read" : isRead,
+                "message" : message
+            ]
+            
+            safeDictToModify["latest_message"] = latestMessageToAddToConversation
+            conversationsDict[position] = safeDictToModify
+            
+            // now we need to set our new conversationsDict as the value at the path of userEmail/conversations
+            strongSelf.databaseReference.child(path).setValue(conversationsDict) { error, _ in
+                guard error == nil else {
+                    print("The error is the following: \(error!)")
+                    print("There is an error in updating the conversationsDict with the latest message.")
+                    completion(false)
+                    return
+                }
+                // success
+                completion(true)
+            }
+        }
+    }
     
     
     
