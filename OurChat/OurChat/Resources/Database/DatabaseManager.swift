@@ -8,6 +8,7 @@
 import Foundation
 import FirebaseDatabase
 import MessageKit
+import UIKit
 
 final class DatabaseManager
 {
@@ -209,8 +210,9 @@ extension DatabaseManager
                     guard let otherUserName = newConversationData["other_user_name"] as? String else {return}
                     guard let otherUserEmail = newConversationData["other_user_email"] as? String else {return}
                    
-                    strongSelf.createNewConversationForRecipient(otherUserName: otherUserName, otherUserEmail: otherUserEmail, message: firstMessage) {[weak self] result in
-                        guard let strongSelf = self else {return}
+                    print("Running after the guard statements")
+                    print(strongSelf)
+                    strongSelf.createNewConversationForRecipient(otherUserName: otherUserName, otherUserEmail: otherUserEmail, message: firstMessage) {result in
                         switch result
                         {
                         case true:
@@ -287,7 +289,7 @@ extension DatabaseManager
         // the first thing we want to do is check to see if the other user exists and cast it to a dictionary of [[String : Any]]
         databaseReference.child(otherUserEmail).observeSingleEvent(of: .value) {[weak self] dataSnapShot in
             guard let userNode = dataSnapShot.value as? [String : Any] else {
-                print("User does not exist and this should nto happen")
+                print("User does not exist and this should not happen")
                 completion(false)
                 return
             }
@@ -327,7 +329,9 @@ extension DatabaseManager
             }
             
             guard let senderEmail = UserDefaults.standard.value(forKey: UserDefaultKeys.loggedInUserSafeEmail) as? String else {return} // so here the sender is the logged in user so the other UserEmail for the recipient is going to be the currently logged in user
-            guard let senderName = UserDefaults.standard.value(forKey: UserDefaultKeys.loggedInUserName) as? String else {return}
+            guard let senderName = UserDefaults.standard.value(forKey: UserDefaultKeys.loggedInUserName) as? String else {
+                print("sender name is nil")
+                return}
             let messageDateAsString = DateFormatterHandler.shared.returnDateAsString(dateToConvert: message.sentDate)
             let newConversationData : [String : Any] = [
                 "conversation_id" : "conversation_\(message.messageId)",
@@ -340,13 +344,15 @@ extension DatabaseManager
                 ]
             ]
             
+            print("Everything above checks out ")
             if var conversationsDict = userNode["conversations"] as? [[String : Any]]
             {
                 // so here the conversationsDict does exist
+                print("Running here")
                 conversationsDict.append(newConversationData)
-                strongSelf.databaseReference.child(otherUserEmail).child("conversation").setValue(conversationsDict) { error, _ in
+                strongSelf.databaseReference.child(otherUserEmail).child("conversations").setValue(conversationsDict) { error, _ in
                     guard error == nil else {
-                        print("There was an error in creating the new Conversation for the recipient: \(error)")
+                        print("There was an error in creating the new Conversation for the recipient: \(error!)")
                         completion(false)
                         return
                     }
@@ -356,11 +362,12 @@ extension DatabaseManager
             else
             {
                 // here the conversations dict does not exist for the user
+                print("Running here as the conversations dict does not exist")
                 var conversationsDictToAppend : [[String : Any]] = [[String : Any]]()
                 conversationsDictToAppend.append(newConversationData)
                 strongSelf.databaseReference.child(otherUserEmail).child("conversations").setValue(conversationsDictToAppend) { error, _ in
                     guard error == nil else {
-                        print("There was an error in creating the conversations dictionary for the recipient: \(error) ")
+                        print("There was an error in creating the conversations dictionary for the recipient: \(error!) ")
                         completion(false)
                         return
                     }
@@ -430,7 +437,6 @@ extension DatabaseManager
                 // so here the unwrapping is scucessfull so we can create the messageModel
                 let sender = Sender(photoURLAsString: "", senderId: senderEmail, displayName: otherUserName)
                 let messageToReturn = Message(sender: sender , messageId: id, sentDate: dateStringAsDate, kind: .text(content))
-                print("The messageToReturn is the following: \(messageToReturn)")
                 return messageToReturn
             })
             print("These are the following messages in the conversation: \(messages)")
@@ -440,23 +446,55 @@ extension DatabaseManager
 
     
     /// Sends a message with target conversation and message 
-    public func sendMessageToConversation(to conversation : Conversation, message : Message, completion : @escaping (Bool) -> Void)
+    internal func sendMessageToConversation(to conversation : String, message : Message, recipientName : String, recipientEmail : String, completion : @escaping (Bool) -> Void)
     {
-        // again we are going to place a string as the type for conversation for now but this will change.
+        // so we need to send the message to the conversation child in the database. Completed
+        // we also need to update the latest message in the conversations array for both the sender and the recipient. The specific object we need to access is in the conversations array.
+        
+        // inplementing sending the message to the conversations child in the database
+        databaseReference.child("\(conversation)/messages").observeSingleEvent(of: .value) {[weak self] dataSnapShot in
+            guard let strongSelf = self else {return}
+            guard var currentMessages = dataSnapShot.value as? [[String : Any]] else {
+                print("There was an error in sending the message to the user")
+                completion(false)
+                return
+            }
+            // success in getting the message child so now we are getting a  nested array of String:Any objects. Now we need to convert our message object into an string:any object that we can use to append it to our currentMessages object
+            let messageDateAsString = DateFormatterHandler.shared.returnDateAsString(dateToConvert: message.sentDate)
+            guard let senderEmail = UserDefaults.standard.value(forKey: UserDefaultKeys.loggedInUserSafeEmail) as? String else {return}
+           
+            let messageObjToAppend = strongSelf.createMessageObjectForDB(message: message, messageDateAsString: messageDateAsString, recipientName: recipientName, senderEmail: senderEmail)
+            
+            currentMessages.append(messageObjToAppend)
+            strongSelf.databaseReference.child(conversation).child("messages").setValue(currentMessages) { error, _ in
+                guard error == nil else {
+                    print("There was an error in updating the conversation child in the database")
+                    completion(false)
+                    return
+                }
+                // success now we want to update the conversation object for both the loggedInUser and the recipient user.
+                
+                
+            }
+        }
         
     }
     
-    /// The method below will create the conversation as a child in the database so messages  can be sent to that conversation
+    ///
+    
+    
+    
+    
+    /// Will create the conversation as a child in the database so messages  can be sent to that conversation
     private func finishCreatingConversation(conversationID : String, firstMessage : Message, otherUserName : String ,completion : @escaping(Bool) -> Void)
     {
         let firstMessageDateAsString = DateFormatterHandler.shared.returnDateAsString(dateToConvert: firstMessage.sentDate)
         guard let currentUserSafeEmail = UserDefaults.standard.value(forKey: UserDefaultKeys.loggedInUserSafeEmail) as? String else {
-            
             completion(false)
             return
         }
         
-        var messageToAppend = " "
+       /* var messageToAppend = " "
         switch firstMessage.kind
         {
         case .text(let messageText):
@@ -479,19 +517,9 @@ extension DatabaseManager
             break
         case .custom(_):
             break
-        }
+        }*/
          
-        /*let messageObjectToAppend : [String : Any] = [
-            "date" : firstMessageDateAsString,
-            "id" : firstMessage.messageId,
-            "other_user_name" : otherUserName,
-            "type" : firstMessage.kind.messageKindString,
-            "content" :messageToAppend ,
-            "sender_email" : currentUserSafeEmail,
-            "is_read" : false
-        ]*/
-        
-        let messageObjectToAppend = createMessageObject(message: firstMessage, messageDateAsString: firstMessageDateAsString, recipientName: otherUserName, senderEmail: currentUserSafeEmail, messageToAppend: messageToAppend)
+        let messageObjectToAppend = createMessageObjectForDB(message: firstMessage, messageDateAsString: firstMessageDateAsString, recipientName: otherUserName, senderEmail: currentUserSafeEmail)
         
         // so here since this is a new conversation we have to create the messages array to append to
         var messagesArray : [[String : Any]] = [[String : Any]]()
@@ -501,7 +529,7 @@ extension DatabaseManager
         let path = "\(conversationID)/messages"
         databaseReference.child(path).setValue(messagesArray) { error, _ in
             guard error == nil else {
-                print("There was an error in setting our new messagesArray to be the value of the messages child: \(error)")
+                print("There was an error in setting our new messagesArray to be the value of the messages child: \(error!)")
                 completion(false)
                 return
             }
@@ -511,8 +539,34 @@ extension DatabaseManager
         }
     }
     
-    private func createMessageObject(message : Message, messageDateAsString : String, recipientName : String, senderEmail : String, messageToAppend : String) -> [String : Any]
+    /// this will create an object that will be used to update the conversation child in the database
+    private func createMessageObjectForDB(message : Message, messageDateAsString : String, recipientName : String, senderEmail : String) -> [String : Any]
     {
+        var messageToAppend = " "
+        switch message.kind
+        {
+        case .text(let messageText):
+            messageToAppend = messageText
+        case .attributedText(_):
+            break
+        case .photo(_):
+            break
+        case .video(_):
+            break
+        case .location(_):
+            break
+        case .emoji(_):
+            break
+        case .audio(_):
+            break
+        case .contact(_):
+            break
+        case .linkPreview(_):
+            break
+        case .custom(_):
+            break
+        }
+        
         let messageObjectToAppend : [String : Any] = [
             "date" : messageDateAsString,
             "id" : message.messageId,
@@ -527,3 +581,23 @@ extension DatabaseManager
     
 }
 
+
+// Adding Functionality that will allow us to get data from any given path
+extension DatabaseManager
+{
+    func getDataForPath(path : String, completion : @escaping(Result<Any,Error>) -> Void)
+    {
+        databaseReference.child(path).observeSingleEvent(of: .value) { dataSnapShot in
+            guard let snapShotValue = dataSnapShot.value else
+            {
+                completion(.failure(DatabaseManagerError.failedToFetch))
+                return
+            }
+            // success
+            completion(.success(snapShotValue))
+        }
+        
+    }
+    
+    
+}
