@@ -168,13 +168,16 @@ class LoginViewController: UIViewController {
     
     private func addAllSubViews()
     {
-        view.addSubview(scrollView)
-        scrollView.addSubview(imageView)
-        scrollView.addSubview(emailField)
-        scrollView.addSubview(passwordField)
-        scrollView.addSubview(loginButton)
-        scrollView.addSubview(facebookLoginButton)
-        scrollView.addSubview(googleSignInButton)
+        view.addSubviews(views: scrollView)
+        scrollView.addSubviews(views: imageView, emailField, passwordField, loginButton, facebookLoginButton, googleSignInButton)
+        
+//        view.addSubview(scrollView)
+//        scrollView.addSubview(imageView)
+//        scrollView.addSubview(emailField)
+//        scrollView.addSubview(passwordField)
+//        scrollView.addSubview(loginButton)
+//        scrollView.addSubview(facebookLoginButton)
+//        scrollView.addSubview(googleSignInButton)
     }
     
     

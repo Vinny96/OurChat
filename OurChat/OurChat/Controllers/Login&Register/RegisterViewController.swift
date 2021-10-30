@@ -182,13 +182,15 @@ class RegisterViewController: UIViewController {
     
     private func addAllSubViews()
     {
-        view.addSubview(scrollView)
-        scrollView.addSubview(profilePictureImageView)
-        scrollView.addSubview(firstNameField)
-        scrollView.addSubview(lastNameField)
-        scrollView.addSubview(emailField)
-        scrollView.addSubview(passwordField)
-        scrollView.addSubview(registerButton)
+        view.addSubviews(views: scrollView)
+        scrollView.addSubviews(views: profilePictureImageView, firstNameField, lastNameField, emailField, passwordField, registerButton)
+//        view.addSubview(scrollView)
+//        scrollView.addSubview(profilePictureImageView)
+//        scrollView.addSubview(firstNameField)
+//        scrollView.addSubview(lastNameField)
+//        scrollView.addSubview(emailField)
+//        scrollView.addSubview(passwordField)
+//        scrollView.addSubview(registerButton)
     }
     
     
@@ -314,6 +316,7 @@ class RegisterViewController: UIViewController {
             let userFullName = ChatAppUser.firstName + " " + ChatAppUser.lastName
             UserDefaults.standard.set(userFullName, forKey: UserDefaultKeys.userProfilePictureDownloadURLKey)
             UserDefaults.standard.set(ChatAppUser.safeEmail, forKey: UserDefaultKeys.loggedInUserSafeEmail)
+            UserDefaults.standard.set(userFullName, forKey: UserDefaultKeys.loggedInUserName)
             completion(.success(successString))
         }
     }
