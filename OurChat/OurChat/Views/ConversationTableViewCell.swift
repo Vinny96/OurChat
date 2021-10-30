@@ -76,9 +76,10 @@ class ConversationTableViewCell: UITableViewCell
     //MARK: - Functions
     private func initializeCell()
     {
-        contentView.addSubview(userImageView)
-        contentView.addSubview(userNameLabel)
-        contentView.addSubview(userMessageLabel)
+        contentView.addSubviews(views: userImageView, userNameLabel, userMessageLabel)
+        //contentView.addSubview(userImageView)
+        //contentView.addSubview(userNameLabel)
+        //contentView.addSubview(userMessageLabel)
     }
     
     
@@ -93,7 +94,6 @@ class ConversationTableViewCell: UITableViewCell
             switch result
             {
             case .success(let downloadURL):
-                print("Successfully got the downloadURL for the sender.")
                 guard let urlToUse = URL(string: downloadURL) else {return}
                 DispatchQueue.main.async {
                     strongSelf.userImageView.sd_setImage(with: urlToUse, completed: nil)
