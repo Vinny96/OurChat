@@ -83,18 +83,18 @@ class NewConversationViewController: UIViewController {
         
         navigationController?.navigationBar.topItem?.titleView = searchBar
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel, target: self, action: #selector(didTapCancel))
-        addSubViews()
+        view.addSubviews(views: noResultsLabel,tableView)
         searchBar.delegate = self
         searchBar.becomeFirstResponder()
         tableView.delegate = self
         tableView.dataSource = self
     }
     
-    private func addSubViews()
+    /*private func addSubViews()
     {
         view.addSubview(noResultsLabel)
         view.addSubview(tableView)
-    }
+    }*/
     
     private func filterUsers(with term : String)
     {
@@ -109,8 +109,7 @@ class NewConversationViewController: UIViewController {
             return name.hasPrefix(term.lowercased())
         }
         self.arrayOfFilteredUsers = results
-        print("-------------------")
-        print(arrayOfFilteredUsers)
+
     }
     
     private func updateUI()
@@ -179,7 +178,6 @@ extension NewConversationViewController : UISearchBarDelegate
                 switch result
                 {
                 case .success(let allUsers):
-                    print(allUsers)
                     strongSelf.arrayOfUsers = allUsers
                     strongSelf.hasFetched = true
                     strongSelf.filterUsers(with: query)
@@ -215,7 +213,6 @@ extension NewConversationViewController : UITableViewDelegate, UITableViewDataSo
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        print("Running here ")
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
         cell.textLabel?.text = arrayOfFilteredUsers[indexPath.row]["full_name"]
         return cell

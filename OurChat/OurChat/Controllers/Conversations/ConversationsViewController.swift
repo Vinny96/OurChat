@@ -44,10 +44,11 @@ class ConversationsViewController: UIViewController {
         super.viewDidLoad()
         createComposeNewMessageButton()
         title = "Conversations"
-        addSubviews()
+        //addSubviews()
+        view.addSubviews(views: tableView, noConversationsLabel)
         setupTableView()
         fetchConversations()
-        startListeningForConversations()
+        startListeningForConversations() // I could move this to viewDid appear but this is very inefficient
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -149,12 +150,10 @@ class ConversationsViewController: UIViewController {
             case .success(let conversations):
                 guard !conversations.isEmpty else {return}
                 strongSelf.conversationsArray = conversations
-                print(strongSelf.conversationsArray)
                 DispatchQueue.main.async {
                     strongSelf.tableView.isHidden = false
                     strongSelf.tableView.reloadData()
                 }
-                // we then want to call our ui method that will udpate the tableview and show the updated/new conversations
             case .failure(let error):
                 print(error)
                 return
@@ -189,11 +188,14 @@ extension ConversationsViewController : UITableViewDelegate, UITableViewDataSour
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        //let vc = ChatViewController() // will be extended and instantiated with the name of the user we want to chat with
-      //  vc.title = "Jenny Smith"
-      //  vc.navigationItem.largeTitleDisplayMode = .never
-      //  navigationController?.pushViewController(vc, animated: true)
+        let conversationSelected = conversationsArray[indexPath.row]
+        let otherUserName = conversationSelected.otherUserName
+        let otherUserEmail = conversationSelected.otherUserEmail
+        let conversationID = conversationSelected.conversationID
+        let vc = ChatViewController(with: otherUserEmail, with: otherUserName, convoID: conversationID)
+        vc.navigationItem.largeTitleDisplayMode = .never
+        navigationController?.pushViewController(vc, animated: true)
     }
     
 }
-// stopped at 15:52
+
