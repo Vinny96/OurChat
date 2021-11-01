@@ -333,10 +333,12 @@ extension DatabaseManager
                 print("sender name is nil")
                 return}
             let messageDateAsString = DateFormatterHandler.shared.returnDateAsString(dateToConvert: message.sentDate)
+            
+            
             let newConversationData : [String : Any] = [
                 "conversation_id" : "conversation_\(message.messageId)",
                 "other_user_email" : senderEmail,
-                "other_user_name" : senderName, // we need to cache the current logged in users name which we will use to populate this field once we have done that
+                "other_user_name" : senderName, // we need to cache the current logged in users name which we will use to populate this field
                 "latest_message" : [
                     "date" : messageDateAsString,
                     "message" : messageToAppend,
@@ -344,7 +346,6 @@ extension DatabaseManager
                 ]
             ]
             
-            print("Everything above checks out ")
             if var conversationsDict = userNode["conversations"] as? [[String : Any]]
             {
                 // so here the conversationsDict does exist
@@ -568,31 +569,6 @@ extension DatabaseManager
             return
         }
         
-       /* var messageToAppend = " "
-        switch firstMessage.kind
-        {
-        case .text(let messageText):
-            messageToAppend = messageText
-        case .attributedText(_):
-            break
-        case .photo(_):
-            break
-        case .video(_):
-            break
-        case .location(_):
-            break
-        case .emoji(_):
-            break
-        case .audio(_):
-            break
-        case .contact(_):
-            break
-        case .linkPreview(_):
-            break
-        case .custom(_):
-            break
-        }*/
-         
         let messageObjectToAppend = createMessageObjectForDB(message: firstMessage, messageDateAsString: firstMessageDateAsString, recipientName: otherUserName, senderEmail: currentUserSafeEmail)
         
         // so here since this is a new conversation we have to create the messages array to append to
@@ -616,15 +592,23 @@ extension DatabaseManager
     /// this will create an object that will be used to update the conversation child in the database
     private func createMessageObjectForDB(message : Message, messageDateAsString : String, recipientName : String, senderEmail : String) -> [String : Any]
     {
+        // we need to update this method later on to support the various different message types 
         var messageToAppend = " "
         switch message.kind
         {
         case .text(let messageText):
             messageToAppend = messageText
+        
         case .attributedText(_):
             break
-        case .photo(_):
+        
+        case .photo(let mediaItem):
+            if let targetURLAsString = mediaItem.url?.absoluteString
+            {
+                messageToAppend = targetURLAsString
+            }
             break
+        
         case .video(_):
             break
         case .location(_):
