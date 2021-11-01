@@ -20,6 +20,7 @@ class ChatViewController: MessagesViewController {
     private var conversationID : String? = nil
     
     private var databaseReference = DatabaseManager.shared
+    private var storageReference = StorageManager.shared
     private var messages = [Message]()
     
     
@@ -27,7 +28,8 @@ class ChatViewController: MessagesViewController {
     // for demo purposes
     private var selfSender : Sender? {
         guard let email = UserDefaults.standard.value(forKey: UserDefaultKeys.loggedInUserSafeEmail) as? String else {return nil}
-        let senderToReturn = Sender(photoURLAsString: "", senderId: email, displayName: "Joe Smith") // make sure to update this
+        guard let loggedInUserName = UserDefaults.standard.value(forKey: UserDefaultKeys.loggedInUserName) as? String else {return nil}
+        let senderToReturn = Sender(photoURLAsString: "", senderId: email, displayName: loggedInUserName) // make sure to update this for the photoURL
         return senderToReturn
     }
     
@@ -209,8 +211,8 @@ extension ChatViewController : InputBarAccessoryViewDelegate
         guard !text.replacingOccurrences(of: " ", with: "").isEmpty,
               let safeSelfSender = self.selfSender,
               let messageID = createMessageID() else{return}
+        let message = Message(sender: safeSelfSender, messageId: messageID, sentDate: Date(), kind: .text(text)) // this does need to be updated later on to support the various message types
         
-        let message = Message(sender: safeSelfSender, messageId: messageID, sentDate: Date(), kind: .text(text))
         // success so here we want to send message
         if isNewConversation
         {
@@ -269,7 +271,8 @@ extension ChatViewController : PHPickerViewControllerDelegate
             if(result.itemProvider.canLoadObject(ofClass: UIImage.self))
             {
                 // so here this means we can load an object of UIImage from the result
-                result.itemProvider.loadObject(ofClass: UIImage.self) { reading, error in
+                result.itemProvider.loadObject(ofClass: UIImage.self) {[weak self] reading, error in
+                    guard let strongSelf = self else {return}
                     guard let resultAsImage = reading as? UIImage else {
                         print("Object could not be cast as an image")
                         return
@@ -281,6 +284,44 @@ extension ChatViewController : PHPickerViewControllerDelegate
                     }
                     print(data)
                     // here is where we then want to upload the data to firebase storage.
+                    guard let messageID = strongSelf.createMessageID() else {return}
+                    guard let safeConversationID = strongSelf.conversationID else {return}
+                    
+                    
+                   // let fileName = "photo_message" + messageID + ".png"
+                    let fileName = ("photo_message_\(messageID).png") 
+                    strongSelf.storageReference.uploadImageToConversationStorage(data: data, fileName: fileName, conversationID: safeConversationID) { result in
+                        switch result
+                        {
+                        case .success(let downloadURLAsString):
+                            print(downloadURLAsString)
+                            
+                            // now we want to send the message
+                            guard let downloadURL = URL(string: downloadURLAsString) else {return}
+                            guard let messageID = strongSelf.createMessageID() else {return}
+                            guard let safeSelfSender = strongSelf.selfSender else {return}
+                            guard let placeHolderImage = UIImage(systemName: "questionmark") else {return}
+                            let mediaObj = Media(url: downloadURL, image: nil, placeholderImage: placeHolderImage, size: CGSize(width: 0, height: 0))
+                            let message = Message(sender: safeSelfSender, messageId: messageID, sentDate: Date(), kind: .photo(mediaObj))
+                            
+                            strongSelf.databaseReference.sendMessageToConversation(to: safeConversationID, message: message, recipientName: strongSelf.recipientFullName, recipientEmail: strongSelf.recipientEmail) { result in
+                                switch result
+                                {
+                                case true:
+                                    print("Success in sending message with photo ")
+                                case false:
+                                    print("Failure in sending message with photo")
+                                }
+                            }
+                            
+                        // if we reach this case this means that we were not successful in uploading the image to the conversation storage
+                        case .failure(let error):
+                            print("Error in uploading the image to conversation storage.")
+                        }
+                    }
+                    
+                    
+                    
                 }
             }
             // here we need to write code that will support the video format
