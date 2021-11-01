@@ -421,7 +421,9 @@ extension DatabaseManager
             }
             // success
             // so here we are getting an array of String:Any which we then need to map into a message object
-            let messages : [Message] = messagesValue.compactMap({dictionary in
+            let messages : [Message] = messagesValue.compactMap({[weak self] dictionary in
+                guard let strongSelf = self else {return nil} // this line will never return nil as this is being done to prevent retain cycle
+                
                 guard let content = dictionary["content"] as? String,
                       let date = dictionary["date"] as? String,
                       let id = dictionary["id"] as? String,
@@ -434,10 +436,14 @@ extension DatabaseManager
                     print("Running in the else block")
                     return nil
                 }
+                // so here the unwrapping is scucessful so we can create the messageModel
                 
-                // so here the unwrapping is scucessfull so we can create the messageModel
+                // before we create the message mdoel we need to see what the type is so we can create the appropriate message kind
+                let messageKindToUse = strongSelf.createMessageKind(content: content, type: type)
+                guard let safeMessageKindToUse = messageKindToUse else {return nil} // so this will not return nil and if it does it means something is wrong with the createMessageKind function
+                
                 let sender = Sender(photoURLAsString: "", senderId: senderEmail, displayName: otherUserName)
-                let messageToReturn = Message(sender: sender , messageId: id, sentDate: dateStringAsDate, kind: .text(content))
+                let messageToReturn = Message(sender: sender , messageId: id, sentDate: dateStringAsDate, kind: safeMessageKindToUse) // this needs to be updated to handle the other cases, need to pass in type into here
                 return messageToReturn
             })
             completion(.success(messages))
@@ -558,8 +564,6 @@ extension DatabaseManager
     }
     
     
-    
-    
     /// Will create the conversation as a child in the database so messages  can be sent to that conversation
     private func finishCreatingConversation(conversationID : String, firstMessage : Message, otherUserName : String ,completion : @escaping(Bool) -> Void)
     {
@@ -588,11 +592,16 @@ extension DatabaseManager
             completion(true)
         }
     }
-    
+}
+
+
+// Helper Functions For DatabaseManager
+extension DatabaseManager
+{
     /// this will create an object that will be used to update the conversation child in the database
     private func createMessageObjectForDB(message : Message, messageDateAsString : String, recipientName : String, senderEmail : String) -> [String : Any]
     {
-        // we need to update this method later on to support the various different message types 
+        // we need to update this method later on to support the various different message types
         var messageToAppend = " "
         switch message.kind
         {
@@ -637,8 +646,26 @@ extension DatabaseManager
         return messageObjectToAppend
     }
     
+    func createMessageKind(content : String, type : String) -> MessageKind?
+    {
+        var messageKindToReturn : MessageKind?
+        switch type
+        {
+        case "text":
+            messageKindToReturn = .text(content)
+            return messageKindToReturn
+        
+        case "photo":
+            guard let safeURl = URL(string: content) else {return nil}
+            guard let safePlaceHolderImageToUse = UIImage(systemName: "questionmark") else {return nil}
+            let mediaObj = Media(url: safeURl, image: nil, placeholderImage: safePlaceHolderImageToUse, size: CGSize(width: 300, height: 300)) // we should fix this to use the width and height of the device
+            messageKindToReturn = .photo(mediaObj)
+            return messageKindToReturn
+        default: // once we have supported all various types the default case should never be hit
+            return nil
+        }
+    }
 }
-
 
 // Adding Functionality that will allow us to get data from any given path
 extension DatabaseManager
@@ -656,6 +683,4 @@ extension DatabaseManager
         }
         
     }
-    
-    
 }
