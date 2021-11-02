@@ -112,6 +112,7 @@ class ChatViewController: MessagesViewController {
         messagesCollectionView.messagesDataSource = self
         messagesCollectionView.messagesLayoutDelegate = self
         messagesCollectionView.messagesDisplayDelegate = self
+        messagesCollectionView.messageCellDelegate = self
         messageInputBar.delegate = self
         becomeFirstResponder()
         setupInputButton()
@@ -189,8 +190,7 @@ extension ChatViewController : MessagesLayoutDelegate, MessagesDisplayDelegate, 
     func numberOfSections(in messagesCollectionView: MessagesCollectionView) -> Int {
         return messages.count
     }
-    
-    
+
     func configureMediaMessageImageView(_ imageView: UIImageView, for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView)
     {
         // so we want to download the image and then cache it so we do not have to download the same image again and again with every new lifecycle
@@ -206,6 +206,27 @@ extension ChatViewController : MessagesLayoutDelegate, MessagesDisplayDelegate, 
         }
     }
 }
+
+extension ChatViewController : MessageCellDelegate
+{
+    func didTapImage(in cell: MessageCollectionViewCell)
+    {
+        guard let indexPath = messagesCollectionView.indexPath(for: cell) else {return}
+        let messageSelcted = messages[indexPath.section]
+        switch messageSelcted.kind
+        {
+        case.photo(let mediaItem):
+            guard let url = mediaItem.url else {return}
+V            let vc = PhotoViewerViewController(urlToUse: url)
+            navigationController?.pushViewController(vc, animated: true)
+            
+        default:
+            print("The default block is running and this block should not be running")
+        }
+    }
+    
+}
+
 
 extension ChatViewController : InputBarAccessoryViewDelegate
 {
