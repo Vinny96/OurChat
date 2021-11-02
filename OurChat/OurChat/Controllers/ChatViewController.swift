@@ -10,6 +10,7 @@ import MessageKit
 import InputBarAccessoryView
 import Firebase
 import PhotosUI
+import SDWebImage
 
 class ChatViewController: MessagesViewController {
     
@@ -187,6 +188,22 @@ extension ChatViewController : MessagesLayoutDelegate, MessagesDisplayDelegate, 
     
     func numberOfSections(in messagesCollectionView: MessagesCollectionView) -> Int {
         return messages.count
+    }
+    
+    
+    func configureMediaMessageImageView(_ imageView: UIImageView, for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView)
+    {
+        // so we want to download the image and then cache it so we do not have to download the same image again and again with every new lifecycle
+        guard let message = message as? Message else {return}
+        switch message.kind
+        {
+        case .photo(let mediaItem):
+            guard let url = mediaItem.url else {return}
+            imageView.sd_setImage(with: url, completed: nil)
+            
+        default :
+            print("default block is getting hit")
+        }
     }
 }
 
