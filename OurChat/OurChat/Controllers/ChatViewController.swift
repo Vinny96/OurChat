@@ -12,7 +12,7 @@ import Firebase
 import PhotosUI
 import SDWebImage
 
-class ChatViewController: MessagesViewController {
+class ChatViewController: MessagesViewController, UINavigationControllerDelegate {
     
     // properties
     var isNewConversation = false
@@ -31,6 +31,11 @@ class ChatViewController: MessagesViewController {
         guard let email = UserDefaults.standard.value(forKey: UserDefaultKeys.loggedInUserSafeEmail) as? String else {return nil}
         guard let loggedInUserName = UserDefaults.standard.value(forKey: UserDefaultKeys.loggedInUserName) as? String else {return nil}
         let senderToReturn = Sender(photoURLAsString: "", senderId: email, displayName: loggedInUserName) // make sure to update this for the photoURL
+        print("Statements are below")
+        print(email)
+        print(loggedInUserName)
+        print(senderToReturn)
+        print("Statements are above")
         return senderToReturn
     }
     
@@ -75,8 +80,8 @@ class ChatViewController: MessagesViewController {
         }
         let actionSheetVideoButton = UIAlertAction(title: "Attach Videos", style: .default) { [weak self] _ in
             guard let strongSelf = self else {return}
-            // call the code that will bring up the PHPicker and configuration method
-            strongSelf.initializeAndPresentPHPicker()
+            // here we need to present the image picker which will be used to display videos
+            strongSelf.initializeAndPresentImagePicker()
         }
         let actionSheetAudioButton = UIAlertAction(title: "Attach Audio", style: .default) { [weak self] _ in
             guard let strongSelf = self else {return}
@@ -158,10 +163,21 @@ class ChatViewController: MessagesViewController {
     {
         var configuration = PHPickerConfiguration()
         configuration.selectionLimit = 3
-        configuration.filter = .any(of: [.images, .videos])
+        configuration.filter = .any(of: [.images])
         let picker = PHPickerViewController(configuration: configuration)
         picker.delegate = self
         present(picker, animated: true, completion: nil)
+    }
+    
+    private func initializeAndPresentImagePicker()
+    {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.delegate = self
+        picker.mediaTypes = ["public.movie"]
+        picker.allowsEditing = false
+        picker.videoQuality = .typeMedium
+        self.present(picker, animated: true, completion: nil)
     }
 }
 
@@ -217,7 +233,7 @@ extension ChatViewController : MessageCellDelegate
         {
         case.photo(let mediaItem):
             guard let url = mediaItem.url else {return}
-V            let vc = PhotoViewerViewController(urlToUse: url)
+            let vc = PhotoViewerViewController(urlToUse: url)
             navigationController?.pushViewController(vc, animated: true)
             
         default:
@@ -357,19 +373,63 @@ extension ChatViewController : PHPickerViewControllerDelegate
                             print("Error in uploading the image to conversation storage.")
                         }
                     }
-                    
-                    
-                    
                 }
             }
-            // here we need to write code that will support the video format
-            
-            
             
         }
-        
-        
-        
     }
+}
+
+extension ChatViewController : UIImagePickerControllerDelegate
+{
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        // code for cancel operation
+    }
+    
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any])
+    {
+        // we ned to dismiss the picker
+        picker.dismiss(animated: true, completion: nil)
+        
+        
+        // so here we have finished picking the video we want to get the url for it
+        if let videoURL = info[.mediaURL] as? URL
+        {
+            //success so here the url for the video was extracted
+            let messageID = createMessageID()
+            let fileName = "video_message_\(messageID).mov"
+            // now we have to call our function that will upload our video message to Firebase Storage
+            guard let safeConversationID = conversationID else {return}
+            storageReference.uploadVideoToConversationStorage(videoURL: videoURL, fileName: fileName, conversationID: safeConversationID) {[weak self] result in
+                guard let strongSelf = self else {return}
+                switch result
+                {
+                case .success(let downloadURL):
+                    guard let messageID = strongSelf.createMessageID() else {return}
+                    guard let safeSelfSender = strongSelf.selfSender else {return}
+                    guard let safePlaceHolderImage = UIImage(systemName: "video.circle.fill") else {return}
+                    guard let downloadURLAsURL = URL(string: downloadURL) else {return}
+                    let mediaObj = Media(url: downloadURLAsURL, image: nil, placeholderImage: safePlaceHolderImage, size: CGSize(width: 300, height: 300))
+                    let message = Message(sender: safeSelfSender, messageId: messageID, sentDate: Date(), kind: .video(mediaObj))
+                    
+                    strongSelf.databaseReference.sendMessageToConversation(to: safeConversationID, message: message, recipientName: strongSelf.recipientFullName, recipientEmail: strongSelf.recipientEmail) { result in
+                        switch result
+                        {
+                        case true :
+                            print("Success in sending video message to the recipient")
+                        case false:
+                            print("Failure in sending the video message to the recipient")
+                        }
+                    }
+                    
+                case .failure(let error):
+                    print("Error in  uploading the video URL to firebase storage :\(error)")
+                    // should make an error enum that displays error message to the user rather than just printing
+                }
+            }
+            
+        }
+    }
+    
     
 }
