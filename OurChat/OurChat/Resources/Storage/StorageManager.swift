@@ -59,6 +59,7 @@ final class StorageManager
     
     /// uploads the image to the conversations subfolder whose id matches the conversation id provided
     internal typealias uploadImageToConversationCompletion = (Result<String,Error>) -> Void
+    
     internal func uploadImageToConversationStorage(data : Data, fileName : String, conversationID : String ,completion : @escaping uploadImageToConversationCompletion)
     {
         // so first thing is first and we want to define the path
@@ -84,6 +85,31 @@ final class StorageManager
                 }
             }
         }
+    }
+    
+    internal typealias uploadVideoToConversationCompletion = (Result<String,Error>) -> Void
+    internal func uploadVideoToConversationStorage(videoURL : URL, fileName : String, conversationID : String, completion : @escaping uploadVideoToConversationCompletion)
+    {
+        let path = ("conversations/\(conversationID)/\(fileName)")
+        storageReference.child(path).putFile(from: videoURL, metadata: nil) {[weak self] metaData, error in
+            guard let strongSelf = self else {return}
+            guard metaData != nil, error == nil else {
+                completion(.failure(StorageError.uploadFileError))
+                return
+            }
+            // success so now we want to get the downloadURL from our file
+            strongSelf.getDownloadURL(for: path) { result in
+                switch result
+                {
+                case .success(let downloadURL):
+                    completion(.success(downloadURL))
+                case .failure(let error):
+                    completion(.failure(error))
+                }
+            }
+        }
+        
+        
     }
 
     
