@@ -618,7 +618,11 @@ extension DatabaseManager
             }
             break
         
-        case .video(_):
+        case .video(let mediaItem):
+            if let targetURLAsString = mediaItem.url?.absoluteString
+            {
+                messageToAppend = targetURLAsString
+            }
             break
         case .location(_):
             break
@@ -661,6 +665,14 @@ extension DatabaseManager
             let mediaObj = Media(url: safeURl, image: nil, placeholderImage: safePlaceHolderImageToUse, size: CGSize(width: 300, height: 300)) // we should fix this to use the width and height of the device
             messageKindToReturn = .photo(mediaObj)
             return messageKindToReturn
+        
+        case "video":
+            guard let safeURL = URL(string: content) else {return nil}
+            guard let safePlaceHolderImageToUse = UIImage(systemName: "video.circle.fill") else {return nil}
+            let mediaObj = Media(url: safeURL, image: nil, placeholderImage: safePlaceHolderImageToUse, size: CGSize(width: 300, height: 300))
+            messageKindToReturn = .video(mediaObj)
+            return messageKindToReturn
+            
         default: // once we have supported all various types the default case should never be hit
             return nil
         }
