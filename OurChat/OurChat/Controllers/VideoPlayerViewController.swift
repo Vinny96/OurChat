@@ -6,24 +6,41 @@
 //
 
 import UIKit
+import AVKit
+import AVFoundation
 
 class VideoPlayerViewController: UIViewController {
-
+    
+    // properties
+    private var videoURL : URL
+    
+    
+    
+    
+    // MARK: - System Called Functions and Initializers
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        // Do any additional setup after loading the view.
+        title = "View Video Message"
+        view.backgroundColor = .black
+        playVideo()
     }
     
-
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destination.
-        // Pass the selected object to the new view controller.
+    init(videoToUseURL : URL)
+    {
+        videoURL = videoToUseURL
+        super.init(nibName: nil, bundle: nil)
     }
-    */
-
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    
+    //MARK: - Functions
+    private func playVideo()
+    {
+        let vc = AVPlayerViewController()
+        vc.player = AVPlayer(url: videoURL)
+        present(vc, animated: true, completion: nil)
+    }
 }

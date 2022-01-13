@@ -236,6 +236,11 @@ extension ChatViewController : MessageCellDelegate
             let vc = PhotoViewerViewController(urlToUse: url)
             navigationController?.pushViewController(vc, animated: true)
             
+        case.video(let mediaItem):
+            guard let videoURL = mediaItem.url else {return}
+            let vc = VideoPlayerViewController(videoToUseURL: videoURL)
+            navigationController?.pushViewController(vc, animated: true)
+        
         default:
             print("The default block is running and this block should not be running")
         }
@@ -384,6 +389,7 @@ extension ChatViewController : UIImagePickerControllerDelegate
 {
     func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
         // code for cancel operation
+        picker.dismiss(animated: true, completion: nil)
     }
     
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any])
