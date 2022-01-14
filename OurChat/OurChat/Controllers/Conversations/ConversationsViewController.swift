@@ -111,10 +111,10 @@ class ConversationsViewController: UIViewController {
         tableView.dataSource = self
     }
     
-    private func createNewConversation(result : [String : String])
+    private func createNewConversation(result : SearchResult)
     {
-        guard let fullName = result["full_name"],
-              let recipientEmail = result["safe_email"] else{return}
+        let fullName = result.fullName
+        let recipientEmail = result.email
         let vc = ChatViewController(with: recipientEmail, with: fullName)
         vc.title = fullName
         vc.isNewConversation = true
